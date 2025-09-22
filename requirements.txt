@@ -1,0 +1,29 @@
+# Core dependencies for CSE LightUNETR
+torch>=2.4.1
+torchvision>=0.19.1
+torchaudio>=2.4.1
+numpy>=2.1.0
+scipy>=1.7.0
+scikit-image>=0.18.0
+h5py>=3.1.0
+tensorboardX>=2.4
+tqdm>=4.67.0
+fvcore>=0.1.5
+einops>=0.8.0
+timm>=1.0.0
+monai>=1.5.0
+
+# Medical imaging and data handling
+nibabel>=5.3.0
+PyYAML>=6.0.0
+pillow>=11.0.0
+
+# Utility packages
+easydict>=1.13
+yacs>=0.1.8
+objprint>=0.3.0
+
+# Optional dependencies for enhanced functionality
+matplotlib>=3.10.0
+accelerate>=1.10.0
+huggingface-hub>=0.35.0
