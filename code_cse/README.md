@@ -1,42 +1,4 @@
-# [TPAMI' 2025] Harnessing Lightweight Transformer with Contextual Synergic Enhancement for Efficient 3D Medical Image Segmentation
-
-**Authors:** Xinyu Liu, Zhen Chen, Wuyang Li, Chenxin Li, Yixuan Yuan
-
-## Overview
-
-This repository contains the implementation of our Light-UNETR for efficient 3D medical image segmentation with contextual synergic enhancement (CSE).
-
-## Installation
-
-### Prerequisites
-- Python 3.10+
-- CUDA-compatible GPU
-- torch version 2.4.1
-
-### Setup
-
-**Clone the repository:**
-```bash
-git clone https://github.com/CUHK-AIM-Group/code_cse.git
-cd code_cse
-```
-
-**Create conda environment:**
-```bash
-conda create -n lightunetr python=3.12
-conda activate lightunetr
-```
-
-**Install dependencies:**
-```bash
-pip install -r requirements.txt
-```
-
-##  Supported Datasets
-
-- **LA (Left Atrium)**: Left atrium segmentation from cardiac MRI
-- **Pancreas-CT**: Pancreas segmentation from abdominal CT scans  
-- **BraTS 2019**: Brain tumor segmentation from multimodal MRI
+# Semi-Supervised Learning
 
 ## 📁 Data Preparation
 
@@ -85,7 +47,6 @@ datasets/
     └── train_unlab6.list
 ```
 
-
 ## 🎯 Semi-Supervised Learning with CSE
 
 ### 🚀 Training Commands
@@ -132,7 +93,7 @@ python ./code_cse/train_supervised.py --dataset pancreas --exp train_supervised 
 - `--labelnum`: Number of labeled samples for semi-supervised learning
 - `--gpu`: GPU device ID
 
-## 📊 Fully Supervised Learning
+## �📊 Fully Supervised Learning
 
 For fully supervised training on other datasets, please refer to `./fullysup`.
 
@@ -173,6 +134,3 @@ If you find this work useful, please cite our paper:
 }
 ```
 
-## Acknowledgement
-
-We sincerely appreciate [SSL4MIS](https://github.com/HiLab-git/SSL4MIS), [Slim UNETR](https://github.com/aigzhusmart/Slim-UNETR), [BCP](https://github.com/DeepMed-Lab-ECNU/BCP), [MedNeXt](https://github.com/MIC-DKFZ/MedNeXt), [FUSSNet](https://github.com/grant-jpg/FUSSNet), [MIC](https://github.com/lhoyer/MIC), and [volumentations](https://github.com/ZFTurbo/volumentations) for their awesome codebases. If you have any questions, contact xinyuliu@link.cuhk.edu.hk or open an issue.

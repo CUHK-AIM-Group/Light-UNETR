@@ -145,7 +145,6 @@ class Encoder(nn.Module):
         B, C, W, H, Z = x.shape
         x = self.block4(x)
         x = x.flatten(2).transpose(-1, -2)
-        # print(x.shape, self.position_embeddings.shape)
         x = x + self.position_embeddings
         x = self.dropout(x)
         return x, hidden_states_out, (B, C, W, H, Z)
@@ -230,26 +229,7 @@ class LightUNETR(nn.Module):
         heads=(1, 2, 4, 4),
         r=(4, 2, 2, 1),
         dropout=0.3,
-    ):
-        """
-        Args:
-            in_channels: dimension of input channels.
-            out_channels: dimension of output channels.
-            embed_dim: deepest semantic channels
-            embedding_dim: position code length
-            channels: selection list of downsampling feature channel
-            blocks: depth list of slim blocks
-            heads: multiple set list of attention computations in parallel
-            r: list of stride rate
-            dropout: dropout rate
-        Examples::
-            # for 3D single channel input with size (128, 128, 128), 3-channel output.
-            >>> net = SlimUNETR(in_channels=4, out_channels=3, embedding_dim=64)
-
-            # for 3D single channel input with size (96, 96, 96), 2-channel output.
-            >>> net = SlimUNETR(in_channels=1, out_channels=2, embedding_dim=27)
-
-        """
+    ):        
         super(LightUNETR, self).__init__()
         self.Encoder = Encoder(
             in_channels=in_channels,

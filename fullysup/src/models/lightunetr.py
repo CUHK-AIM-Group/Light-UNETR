@@ -149,49 +149,6 @@ class LightUNETRBlock(nn.Module):
         x = self.cglu2(x) + x
         return x
 
-class LightweightDimensionReductiveAttention_Final(LightweightDimensionReductiveAttention):
-    def forward(self, x):
-        x = self.sparse_sampler(x)
-        B, C, H, W, Z = x.shape
-        x_low, x_high, x_high2 = x.split([C // 3, C // 3, C // 3], dim=1)
-        q, k, v = (
-            self.qkv(x_low)
-            .view(B, self.num_heads, -1, H * W * Z)
-            .split([self.head_dim, self.head_dim, self.head_dim], dim=2)
-        )
-        attn = (q.transpose(-2, -1) @ k).softmax(-1)
-        att_new = attn.detach().clone().mean(dim=(1,2))
-        att_new = att_new.view(B, -1, H, W, Z)
-        att_new = nn.functional.interpolate(att_new, size=(112, 112, 80), mode='trilinear', align_corners=True) # B, 1, 112, 112, 80
-        x_low = (v @ attn.transpose(-2, -1)).view(B, -1, H, W, Z)
-        x_high = self.high_freq(x_high)
-        x_high2 = self.high_freq3(x_high2)
-        x = torch.cat([x_low, x_high, x_high2], dim=1)
-        return x, att_new
-
-class Block_Final(nn.Module):
-    def __init__(self, channels, r, heads):
-        super(Block_Final, self).__init__()
-
-        self.conv0 = nn.Conv3d(
-            channels, channels, kernel_size=3, padding=1, groups=channels, bias=False
-        )
-        self.lidr1 = LightweightDimensionReductiveAttention(channels, r, heads)
-        self.rec1 = SpatialRecover(channels, r)
-        self.cglu1 = CGLU(channels)
-        self.lidr2 = LightweightDimensionReductiveAttention_Final(channels, r, heads)
-        self.rec2 = SpatialRecover(channels, r)
-        self.cglu2 = CGLU(channels)
-
-
-    def forward(self, x):
-        x = self.conv0(x) + x
-        x = self.rec1(self.lidr1(x)) + x
-        x = self.cglu1(x) + x
-        x_tmp, att_map = self.lidr2(x)
-        x = self.rec2(x_tmp) + x
-        x = self.cglu2(x) + x
-        return x, att_map
 
 class DepthwiseConvLayer(nn.Module):
     def __init__(self, dim_in, dim_out, r):
@@ -261,7 +218,6 @@ class Encoder(nn.Module):
         B, C, W, H, Z = x.shape
         x = self.block4(x)
         x = x.flatten(2).transpose(-1, -2)
-        # print(x.shape, self.position_embeddings.shape)
         x = x + self.position_embeddings
         x = self.dropout(x)
         return x, hidden_states_out, (B, C, W, H, Z)
@@ -299,7 +255,7 @@ class Decoder(nn.Module):
 
         block = []
         for _ in range(blocks[0]):
-            block.append(Block_Final(channels=channels[0], r=r[0], heads=heads[0]))
+            block.append(LightUNETRBlock(channels=channels[0], r=r[0], heads=heads[0]))
         self.block1 = nn.Sequential(*block)
         block = []
         for _ in range(blocks[1]):
@@ -328,9 +284,9 @@ class Decoder(nn.Module):
         x = self.block2(x)
         x = self.TSconv3(x)
         x = x + hidden_states_out[0]
-        x, att_map = self.block1(x)
+        x = self.block1(x)
         x = self.SegHead(x)
-        return x, att_map
+        return x
 
 
 
@@ -347,25 +303,6 @@ class LightUNETR(nn.Module):
         r=(4, 2, 2, 1),
         dropout=0.3,
     ):
-        """
-        Args:
-            in_channels: dimension of input channels.
-            out_channels: dimension of output channels.
-            embed_dim: deepest semantic channels
-            embedding_dim: position code length
-            channels: selection list of downsampling feature channel
-            blocks: depth list of slim blocks
-            heads: multiple set list of attention computations in parallel
-            r: list of stride rate
-            dropout: dropout rate
-        Examples::
-            # for 3D single channel input with size (128, 128, 128), 3-channel output.
-            >>> net = SlimUNETR(in_channels=4, out_channels=3, embedding_dim=64)
-
-            # for 3D single channel input with size (96, 96, 96), 2-channel output.
-            >>> net = SlimUNETR(in_channels=1, out_channels=2, embedding_dim=27)
-
-        """
         super(LightUNETR, self).__init__()
         self.Encoder = Encoder(
             in_channels=in_channels,
@@ -389,5 +326,5 @@ class LightUNETR(nn.Module):
 
     def forward(self, x):
         embeding, hidden_states_out, (B, C, W, H, Z) = self.Encoder(x)
-        x, att_map = self.Decoder(embeding, hidden_states_out, (B, C, W, H, Z))
+        x = self.Decoder(embeding, hidden_states_out, (B, C, W, H, Z))
         return x
