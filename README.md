@@ -1,4 +1,4 @@
-# Harnessing Lightweight Transformer with Contextual Synergic Enhancement for Efficient 3D Medical Image Segmentation
+# [TPAMI' 2025] Harnessing Lightweight Transformer with Contextual Synergic Enhancement for Efficient 3D Medical Image Segmentation
 
 **Authors:** Xinyu Liu, Zhen Chen, Wuyang Li, Chenxin Li, Yixuan Yuan
 
