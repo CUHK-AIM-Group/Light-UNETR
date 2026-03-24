@@ -90,7 +90,6 @@ def test_all_case(model, image_list, num_classes, patch_size=(112, 112, 80), str
     total_metric = 0.0
     ith = 0
     for image_path in loader:
-        # id = image_path.split('/')[-2]
         h5f = h5py.File(image_path, 'r')
         image = h5f['image'][:]
         label = h5f['label'][:]
@@ -159,7 +158,6 @@ def test_single_case(model, image, stride_xy, stride_z, patch_size, num_classes=
     sx = math.ceil((ww - patch_size[0]) / stride_xy) + 1
     sy = math.ceil((hh - patch_size[1]) / stride_xy) + 1
     sz = math.ceil((dd - patch_size[2]) / stride_z) + 1
-    # print("{}, {}, {}".format(sx, sy, sz))
     score_map = np.zeros((num_classes, ) + image.shape).astype(np.float32)
     cnt = np.zeros(image.shape).astype(np.float32)
 
@@ -174,16 +172,9 @@ def test_single_case(model, image, stride_xy, stride_z, patch_size, num_classes=
                 test_patch = torch.from_numpy(test_patch).cuda()
 
                 with torch.no_grad():
-                    # if any of the model parameters is half precision, then convert the input to half precision
-                    # if next(model.parameters()).dtype == torch.float16:
-                    #     test_patch = test_patch.half()
                     y1 = model(test_patch)
                     if isinstance(y1, tuple):
                         y1 = y1[0]
-                        
-                    # convert back to float32 if the model is in half precision
-                    # if next(model.parameters()).dtype == torch.float16:
-                    #     y1 = y1.float()
                     y = F.softmax(y1, dim=1)
 
                 y = y.cpu().data.numpy()

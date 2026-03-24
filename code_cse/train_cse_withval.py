@@ -122,7 +122,6 @@ emb_length = math.ceil(patch_size[0] / 32) * math.ceil(patch_size[1] / 32) * mat
 print("Patch size: {}, Embedding length: {}".format(patch_size, emb_length))
 
 
-train_data_path = args.root_path
 snapshot_path = "./experiments/lightunetr/{}_bs{}_seed{}/{}_{}_bs{}_labbs{}".format(args.dataset, args.labelnum, args.seed, args.exp, args.model, args.batch_size, args.labeled_bs)
 
 os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
@@ -150,7 +149,6 @@ def update_ema_variables(model, ema_model, alpha, global_step):
 def get_pseudo_label(out, thres=0.5, nms=0):
     probs = F.softmax(out, 1)
     masks = (probs >= thres).type(torch.int64)
-    # import ipdb; ipdb.set_trace()
     masks = masks[:, 1, :, :].contiguous()
     if nms == 1:
         masks = LargestCC_pancreas(masks)
@@ -171,7 +169,6 @@ def LargestCC_pancreas(segmentation):
     batch_list = np.array(batch_list)
     return torch.Tensor(batch_list).cuda()
 
-import time
 if __name__ == "__main__":
     ## make logger file
     if not os.path.exists(snapshot_path):
@@ -253,7 +250,6 @@ if __name__ == "__main__":
 
     ce_loss = CrossEntropyLoss()
     dice_loss = losses.DiceLoss(num_classes)
-    # dice_loss = losses.Binary_dice_loss
     if args.optimizer == 'sgd':
         optimizer = optim.SGD(model.parameters(), lr=base_lr, momentum=0.9, weight_decay=0.0001)
     elif args.optimizer == 'adam':
@@ -268,8 +264,6 @@ if __name__ == "__main__":
     max_epoch = max_iterations // len(trainlab_loader) + 1
     lr_ = base_lr
     iterator = range(max_epoch)
-    # multi_formation_synthesizer = Synthesizer(factor=args.mf_factor, decode_type=args.mf_method, patch_size=patch_size, labeled_bs=args.labeled_bs, unlabeled_bs=args.batch_size-args.labeled_bs)
-    
     if args.mask_cont2 == 'mask':
         masking = Masking(
             block_size=args.mask_block_size,
@@ -279,26 +273,13 @@ if __name__ == "__main__":
             blur=args.mask_blur,)
     else:
         raise NotImplementedError
-    # -------------------------------------------- # 
-    # ------ For data name check, avoid leakage -- #
-    # -------------------------------------------- #
-    # train_list = '/mnt/zhen_chen/xyliu/UA-MT/data/train.list'
-    # with open(train_list, 'r') as f:
-    #     train_names = f.readlines()
-    # train_names = [name.strip() for name in train_names]
-    # lab_names = train_names[:args.labelnum]
-    # unlab_names = train_names[args.labelnum:]
-
     # init tau
     tau = torch.zeros((1, 1, 1, 1)).cuda()
     
     for epoch_num in range(15000):
-        # for _, sampled_batch in enumerate(trainloader):
         for step, (labeled_batch, unlabeled_batch) in enumerate(zip(trainlab_loader,trainunlab_loader)):
             start = time.time()
             weak_batch_l, label_l = labeled_batch['image_weak'].cuda(), labeled_batch['label'].cuda()
-            # import ipdb; ipdb.set_trace()
-            # print("weak_batch_l shape: ", weak_batch_l.shape, "label_l shape: ", label_l.shape)
             weak_batch_u, strong_batch_u = unlabeled_batch['image_weak'].cuda(), unlabeled_batch['image_strong'].cuda()
             weak_batch = torch.cat([weak_batch_l, weak_batch_u], dim=0) # label + unlabel
             strong_batch = torch.cat([torch.zeros_like(strong_batch_u), strong_batch_u], dim=0) # 0 + unlabel
@@ -390,7 +371,6 @@ if __name__ == "__main__":
 
             writer.add_scalar('1_Loss/sup_loss', sup_loss, iter_num)
             writer.add_scalar('1_Loss/unsup_loss', unsup_loss, iter_num)
-            # print("times: {:.2f}, {:.2f}, {:.2f}, {:.2f}".format(end1-start, end2-end1, end3-end2, end4-end3))
             assert args.thresh_method == 'patch_wise'
             logging.info('iteration %d : loss : %03f, loss_sup: %03f, loss_unsup: %03f, loss_mix: %03f, high_ratio: %03f, max_tau: %03f, min_tau: %03f' % \
                             (iter_num, loss.item(), sup_loss.item(), unsup_loss.item(), loss_mix.item(), pseduo_high_ratio, torch.max(tau).item(), torch.min(tau).item()))
@@ -430,9 +410,7 @@ if __name__ == "__main__":
                 logging.info("Dice score for VAL at {}-th iteration is {}".format(iter_num, round(dice_sample, 4)))
                 if dice_sample > best_dice:
                     best_dice = round(dice_sample, 4)
-                    # save_mode_path = os.path.join(snapshot_path,  'iter_{}_dice_{}.pth'.format(iter_num, best_dice))
                     save_best_path = os.path.join(snapshot_path,'{}_best_model.pth'.format(args.model))
-                    # torch.save(model.state_dict(), save_mode_path)
                     torch.save(model.state_dict(), save_best_path)
                     logging.info("save best model to {}".format(save_best_path))
 

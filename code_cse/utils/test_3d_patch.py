@@ -41,7 +41,6 @@ def test_all_case(model, image_list, num_classes, patch_size=(112, 112, 80), str
     total_metric = 0.0
     ith = 0
     for image_path in loader:
-        # id = image_path.split('/')[-2]
         h5f = h5py.File(image_path, 'r')
         image = h5f['image'][:]
         label = h5f['label'][:]
@@ -105,7 +104,6 @@ def test_single_case(model, image, stride_xy, stride_z, patch_size, num_classes=
     sx = math.ceil((ww - patch_size[0]) / stride_xy) + 1
     sy = math.ceil((hh - patch_size[1]) / stride_xy) + 1
     sz = math.ceil((dd - patch_size[2]) / stride_z) + 1
-    # print("{}, {}, {}".format(sx, sy, sz))
     score_map = np.zeros((num_classes, ) + image.shape).astype(np.float32)
     cnt = np.zeros(image.shape).astype(np.float32)
 
@@ -130,8 +128,7 @@ def test_single_case(model, image, stride_xy, stride_z, patch_size, num_classes=
                 cnt[xs:xs+patch_size[0], ys:ys+patch_size[1], zs:zs+patch_size[2]] \
                   = cnt[xs:xs+patch_size[0], ys:ys+patch_size[1], zs:zs+patch_size[2]] + 1
     score_map = score_map/np.expand_dims(cnt,axis=0)
-    np.int = np.int32
-    label_map = (score_map[0]>0.5).astype(np.int)
+    label_map = (score_map[0]>0.5).astype(np.int32)
     if add_pad:
         label_map = label_map[wl_pad:wl_pad+w,hl_pad:hl_pad+h,dl_pad:dl_pad+d]
         score_map = score_map[:,wl_pad:wl_pad+w,hl_pad:hl_pad+h,dl_pad:dl_pad+d]

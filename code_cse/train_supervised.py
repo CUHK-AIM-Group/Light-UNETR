@@ -96,8 +96,7 @@ emb_length = math.ceil(patch_size[0] / 32) * math.ceil(patch_size[1] / 32) * mat
 print("Patch size: {}, Embedding length: {}".format(patch_size, emb_length))
 
 
-train_data_path = args.root_path
-snapshot_path = "/data_hdd/xyliu/lightunetr/{}_fullysupervised_seed{}/{}_{}_bs{}_labbs{}".format(args.dataset, args.seed, args.exp, args.model, args.batch_size, args.labeled_bs)
+snapshot_path = "./experiments/lightunetr/{}_fullysupervised_seed{}/{}_{}_bs{}_labbs{}".format(args.dataset, args.seed, args.exp, args.model, args.batch_size, args.labeled_bs)
 
 os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
 os.environ["OMP_NUM_THREADS"] = "8"
@@ -113,7 +112,6 @@ random.seed(args.seed)
 np.random.seed(args.seed)
 
 
-import time
 if __name__ == "__main__":
     ## make logger file
     if not os.path.exists(snapshot_path):
@@ -168,7 +166,6 @@ if __name__ == "__main__":
 
     ce_loss = CrossEntropyLoss()
     dice_loss = losses.DiceLoss(num_classes)
-    # dice_loss = losses.Binary_dice_loss
     if args.optimizer == 'sgd':
         optimizer = optim.SGD(model.parameters(), lr=base_lr, momentum=0.9, weight_decay=0.0001)
     elif args.optimizer == 'adam':
@@ -249,9 +246,7 @@ if __name__ == "__main__":
                 if dice_sample > best_dice:
                     best_dice = round(dice_sample, 4)
                     logging.info("Dice score of best model is {}".format(best_dice))
-                    # save_mode_path = os.path.join(snapshot_path,  'iter_{}_dice_{}.pth'.format(iter_num, best_dice))
                     save_best_path = os.path.join(snapshot_path,'{}_best_model.pth'.format(args.model))
-                    # torch.save(model.state_dict(), save_mode_path)
                     torch.save(model.state_dict(), save_best_path)
                     logging.info("save best model to {}".format(save_best_path))
 
@@ -265,7 +260,7 @@ if __name__ == "__main__":
                     if args.dataset != 'LA':
                         test_image_list = [args.root_path + '/data/' + item.replace('\n', '') + '.h5' for item in test_image_list]
                     else:
-                        test_image_list = ["/data/xyliu/UA-MT/data/2018LA_Seg_Training Set/" + item.replace('\n', '') + "/mri_norm2.h5" for item in test_image_list]
+                        test_image_list = [args.root_path + "/2018LA_Seg_Training Set/" + item.replace('\n', '') + "/mri_norm2.h5" for item in test_image_list]
                     avg_metric = test_all_case(model, test_image_list, num_classes=num_classes,
                                         patch_size=patch_size, stride_xy=stride_xy, stride_z=stride_z,
                                         save_result=True, test_save_path=test_save_path,

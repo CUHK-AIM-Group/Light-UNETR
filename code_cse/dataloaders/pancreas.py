@@ -6,8 +6,6 @@ import h5py
 from torch.utils.data.sampler import Sampler
 from torchvision.transforms import Compose
 
-# import sys
-# sys.path.append("..")
 from .volumentations import RandomGamma, GaussianNoise
 from .volumentations import Compose as VCompose
 
@@ -18,7 +16,6 @@ class StrongWeakPancreas(Dataset):
     """ Pancreas Dataset """
 
     def __init__(self, base_dir, split, aug_times=5, args=None): # aug_times=5 follows https://github.com/VivienLu/UPCoL
-        # self.data_dir = data_dir
         self.base_dir = base_dir
         self.data_dir = os.path.join(base_dir, 'data')
         self.split = split
@@ -131,7 +128,6 @@ class StrongWeakLA_PancreasStyle(Dataset):
     """ Pancreas Dataset """
 
     def __init__(self, base_dir, split, aug_times=5, args=None): # aug_times=5 follows https://github.com/VivienLu/UPCoL
-        # self.data_dir = data_dir
         self.base_dir = base_dir
         self.data_dir = os.path.join(base_dir, 'data')
         self.split = split
@@ -197,7 +193,6 @@ class StrongWeakLA_PancreasStyle(Dataset):
             self.image_list = f.readlines()
 
         self.image_list = [item.replace('\n','') for item in self.image_list]
-        # self.image_list = [self.data_dir+ "/{}".format(item.strip()) + '.h5' for item in self.image_list]
         print("Split : {}, total {} samples".format(split, len(self.image_list)))
 
         if self.args:
@@ -227,7 +222,6 @@ class StrongWeakLA_PancreasStyle(Dataset):
 
     def __getitem__(self, idx):
         image_path = self.image_list[idx % len(self.image_list)]
-        # h5f = h5py.File(image_path, 'r')
         h5f = h5py.File(self.base_dir + "/2018LA_Seg_Training Set/" + image_path + "/mri_norm2.h5", 'r')
         image, label = h5f['image'][:], h5f['label'][:]
 
@@ -247,7 +241,6 @@ class StrongWeakLA_PancreasStyle_withAUG(Dataset):
     """ Pancreas Dataset """
 
     def __init__(self, base_dir, split, aug_times=5, args=None): # aug_times=5 follows https://github.com/VivienLu/UPCoL
-        # self.data_dir = data_dir
         self.base_dir = base_dir
         self.data_dir = os.path.join(base_dir, 'data')
         self.split = split
@@ -299,7 +292,6 @@ class StrongWeakLA_PancreasStyle_withAUG(Dataset):
             self.image_list = f.readlines()
 
         self.image_list = [item.replace('\n','') for item in self.image_list]
-        # self.image_list = [self.data_dir+ "/{}".format(item.strip()) + '.h5' for item in self.image_list]
         print("Split : {}, total {} samples".format(split, len(self.image_list)))
 
         if self.args:
@@ -329,7 +321,6 @@ class StrongWeakLA_PancreasStyle_withAUG(Dataset):
 
     def __getitem__(self, idx):
         image_path = self.image_list[idx % len(self.image_list)]
-        # h5f = h5py.File(image_path, 'r')
         h5f = h5py.File(self.base_dir + "/2018LA_Seg_Training Set/" + image_path + "/mri_norm2.h5", 'r')
         image, label = h5f['image'][:], h5f['label'][:]
 
@@ -350,7 +341,6 @@ class StrongWeakBrats_PancreasStyle(Dataset):
     """ Pancreas Dataset """
 
     def __init__(self, base_dir, split, aug_times=5, args=None): # aug_times=5 follows https://github.com/VivienLu/UPCoL
-        # self.data_dir = data_dir
         self.base_dir = base_dir
         self.data_dir = os.path.join(base_dir, 'data')
         self.split = split
@@ -407,9 +397,6 @@ class StrongWeakBrats_PancreasStyle(Dataset):
         with open(data_path, 'r') as f:
             self.image_list = f.readlines()
 
-        # self.image_list = [item.replace('\n','') for item in self.image_list]
-        # self.image_list = [item.replace('\n', '').split(",")[0] for item in self.image_list]
-        # self.image_list = [self.data_dir+ "/{}".format(item.strip()) + '.h5' for item in self.image_list]
         self.image_list = [self.data_dir+ "/{}".format(item.strip()) + '.h5' for item in self.image_list]
         print("Split : {}, total {} samples".format(split, len(self.image_list)))
 
@@ -534,7 +521,6 @@ class ToTensor(object):
         image_strong = sample[1]
         image_strong = image_strong.reshape(1, image_strong.shape[0], image_strong.shape[1], image_strong.shape[2]).astype(np.float32)
 
-        # sample = [image] + [*sample[1:]]
         sample = [image_weak, image_strong] + [*sample[2:]]
         return [torch.from_numpy(s.astype(np.float32)) for s in sample]
 
@@ -567,44 +553,19 @@ class RandomRotFlip(object):
         return sample
 
 if __name__ == '__main__':
-    # data_dir = '/mnt/zhen_chen/xyliu/preprocess/codes/data'
     base_dir = '/mnt/zhen_chen/xyliu/preprocess/codes'
 
-    labset = Pancreas(base_dir, split='lab')
-    unlabset = Pancreas(base_dir,split='unlab')
-    trainset = Pancreas(base_dir,split='train')
-    testset = Pancreas(base_dir, split='test')
+    labset = StrongWeakPancreas(base_dir, split='lab')
+    unlabset = StrongWeakPancreas(base_dir, split='unlab')
+    trainset = StrongWeakPancreas(base_dir, split='train')
+    testset = StrongWeakPancreas(base_dir, split='test')
 
     lab_sample = labset[0]
     unlab_sample = unlabset[0]
-    train_sample = trainset[0] 
+    train_sample = trainset[0]
     test_sample = testset[0]
 
-    print(len(labset), lab_sample['image_weak'].shape, lab_sample['image_strong'].shape, lab_sample['label'].shape)  # 12 torch.Size([1, 96, 96, 96]) torch.Size([96, 96, 96])
-    print(len(unlabset), unlab_sample['image_weak'].shape, unlab_sample['image_strong'].shape, unlab_sample['label'].shape) # 50 torch.Size([1, 96, 96, 96]) torch.Size([96, 96, 96])
-    print(len(trainset), train_sample['image_weak'].shape, train_sample['image_strong'].shape, train_sample['label'].shape) # 62 torch.Size([1, 96, 96, 96]) torch.Size([96, 96, 96])
-    print(len(testset), test_sample['image_weak'].shape, test_sample['image_strong'].shape, test_sample['label'].shape) # 18 torch.Size([1, 96, 96, 96]) torch.Size([96, 96, 96])
-    # print(len(trainset), train_sample['image'].shape, train_sample['label'].shape) # 62 torch.Size([1, 96, 96, 96]) torch.Size([96, 96, 96])
-    # print(len(testset), test_sample['image'].shape, test_sample['label'].shape) # 18 torch.Size([1, 96, 96, 96]) torch.Size([96, 96, 96])
-
-
-    labset = Pancreas(base_dir, split='lab', aug_times=5)
-    unlabset = Pancreas(base_dir,split='unlab', aug_times=5)
-    trainset = Pancreas(base_dir,split='train', aug_times=5)
-    testset = Pancreas(base_dir, split='test', aug_times=5)
-
-
-    lab_sample = labset[0]
-    unlab_sample = unlabset[0]
-    train_sample = trainset[0] 
-    test_sample = testset[0]
-
-    # print(len(labset), lab_sample['image'].shape, lab_sample['label'].shape)  # 60 torch.Size([1, 96, 96, 96]) torch.Size([96, 96, 96])
-    # print(len(unlabset), unlab_sample['image'].shape, unlab_sample['label'].shape) # 250 torch.Size([1, 96, 96, 96]) torch.Size([96, 96, 96])
-    # print(len(trainset), train_sample['image'].shape, train_sample['label'].shape) # 310 torch.Size([1, 96, 96, 96]) torch.Size([96, 96, 96])
-    # print(len(testset), test_sample['image'].shape, test_sample['label'].shape) # 18 torch.Size([1, 96, 96, 96]) torch.Size([96, 96, 96])
-
-    print(len(labset), lab_sample['image_weak'].shape, lab_sample['image_strong'].shape, lab_sample['label'].shape)  # 60 torch.Size([1, 96, 96, 96]) torch.Size([96, 96, 96])
-    print(len(unlabset), unlab_sample['image_weak'].shape, unlab_sample['image_strong'].shape, unlab_sample['label'].shape) # 250 torch.Size([1, 96, 96, 96]) torch.Size([96, 96, 96])
-    print(len(trainset), train_sample['image_weak'].shape, train_sample['image_strong'].shape, train_sample['label'].shape) # 310 torch.Size([1, 96, 96, 96]) torch.Size([96, 96, 96])
-    print(len(testset), test_sample['image_weak'].shape, test_sample['image_strong'].shape, test_sample['label'].shape) # 18 torch.Size([1, 96, 96, 96]) torch.Size([96, 96, 96])
+    print(len(labset), lab_sample['image_weak'].shape, lab_sample['image_strong'].shape, lab_sample['label'].shape)
+    print(len(unlabset), unlab_sample['image_weak'].shape, unlab_sample['image_strong'].shape, unlab_sample['label'].shape)
+    print(len(trainset), train_sample['image_weak'].shape, train_sample['image_strong'].shape, train_sample['label'].shape)
+    print(len(testset), test_sample['image_weak'].shape, test_sample['image_strong'].shape, test_sample['label'].shape)

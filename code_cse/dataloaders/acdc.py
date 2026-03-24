@@ -15,7 +15,6 @@ import matplotlib.pyplot as plt
 from PIL import Image
 
 from skimage import transform as sk_trans
-# from scipy.ndimage import rotate, zoom
 
 class BaseDataSets(Dataset):
     def __init__(
@@ -77,13 +76,7 @@ class BaseDataSets(Dataset):
         # normalize to 0-1 if not
         if np.max(image) > 1:
             image = self.mrseg19norm(image, mode='Max_Min')
-        # print("img shape, max, min, unique", image.shape, np.max(image), np.min(image), np.unique(image))
-        # input()
         label = h5f["label"][:] # np array
-        # print("label shape, max, min, unique", label.shape, np.max(label), np.min(label), np.unique(label))
-        # input()
-        # print(image.shape, "type", type(image), 'label', label.shape, 'type', type(label))
-        
         sample = {"image": image, "label": label}
         if self.split == "train":
             if None not in (self.ops_weak, self.ops_strong):
@@ -166,9 +159,6 @@ class RandomGenerator(object):
 
     def __call__(self, sample):
         image, label = sample["image"], sample["label"]
-        # ind = random.randrange(0, img.shape[0])
-        # image = img[ind, ...]
-        # label = lab[ind, ...]
         if random.random() > 0.5:
             image, label = random_rot_flip(image, label)
         elif random.random() > 0.5:
@@ -178,8 +168,6 @@ class RandomGenerator(object):
         label = zoom(label, (self.output_size[0] / x, self.output_size[1] / y), order=0)
         image = torch.from_numpy(image.astype(np.float32)).unsqueeze(0)
         label = torch.from_numpy(label.astype(np.uint8))
-        # print("image", image.shape, image.max(), image.min())
-        # print("label", label.shape, label.max(), label.min())
         sample = {"image": image, "label": label}
         return sample
 
@@ -228,9 +216,6 @@ class c_random_flip:
     def __call__(self, sample):
         lr = np.random.random() < 0.5 and self.lr is True
         ud = np.random.random() < 0.5 and self.ud is True
-        # lr = self.lr
-        # ud = self.ud
-
         for key in sample.keys():
             if key in ['image', 'image_weak', 'image_strong', 'gt', 'contour']:
                 sample[key] = np.array(sample[key])
@@ -381,7 +366,7 @@ class WeakStrongAugment_Ours(object):
                 self.transform_list_train.pop('c_random_gaussian_blur', None)
             if args.rot != 359:
                 self.transform_list_train['c_random_rotate']['range'] = [-args.rot, args.rot]
-            # if 
+
 
         self.transform_list_train = self.get_transform(self.transform_list_train)
         self.transform_list_test = self.get_transform(self.transform_list_test)
@@ -402,34 +387,15 @@ class WeakStrongAugment_Ours(object):
         image, label = sample["image"], sample["label"]
         image = self.resize(image)
         label = self.resize(label)
-        # weak augmentation is rotation / flip
-        # image_weak_, label_ = random_rot_flip(image, label)
-        # strong augmentation is color jitter
-        # image_strong_ = color_jitter(image_weak_).type("torch.FloatTensor")
-        # fix dimensions
-        # image_ = torch.from_numpy(image.astype(np.float32)).unsqueeze(0)
-        # image_weak_ = torch.from_numpy(image_weak_.astype(np.float32)).unsqueeze(0)
-        # label_ = torch.from_numpy(label_.astype(np.uint8))
-        # print("strong",image_strong_.shape, image_strong_.min(), image_strong_.max(), image_strong_.type())
-        # print("lab",label_.shape, label_.min(), label_.max(), label_.type())
-        # strong torch.Size([1, 256, 256]) tensor(0.1250) tensor(1.) torch.FloatTensor
-        # lab torch.Size([256, 256]) tensor(0, dtype=torch.uint8) tensor(3, dtype=torch.uint8) torch.ByteTensor
-        # img torch.Size([1, 256, 256]) tensor(0.) tensor(0.8037) torch.FloatTensor
         image_untrans_np = image
-        # print("image",image.shape, image.min(), image.max())
         image = torch.from_numpy(image.astype(np.float32))
-        # print("image",image.shape, image.min(), image.max())
         image = transforms.ToPILImage()(image)
-        # print("pil image",image.size, image.mode)
         image_weak = torch.from_numpy(image_untrans_np.astype(np.float32))
         image_weak = transforms.ToPILImage()(image_weak)
         image_strong = torch.from_numpy(image_untrans_np.astype(np.float32))
         image_strong = transforms.ToPILImage()(image_strong)
         label = torch.from_numpy(label.astype(np.uint8))
         label = transforms.ToPILImage()(label)
-        # print size
-        # image torch.Size([1, 256, 256]) tensor(0.5976) tensor(0.)
-        # label torch.Size([256, 256]) tensor(3, dtype=torch.uint8) tensor(0, dtype=torch.uint8)
         sample = {
             "image": image,
             "image_weak": image_weak,
@@ -446,12 +412,6 @@ class WeakStrongAugment_Ours(object):
         sample_new['image_weak'] = torch.from_numpy(sample_new['image_weak'].astype(np.float32)).unsqueeze(0)
         sample_new['image_strong'] = torch.from_numpy(sample_new['image_strong'].astype(np.float32)).unsqueeze(0)
         sample_new['label_aug'] = torch.from_numpy(sample_new['gt'].astype(np.uint8))
-        
-        # print("ours image",sample_new['image'].shape, sample_new['image'].min(), sample_new['image'].max(), sample_new['image'].type())
-        # print("ours image_weak",sample_new['image_weak'].shape, sample_new['image_weak'].min(), sample_new['image_weak'].max(), sample_new['image_weak'].type())
-        # print("ours image_strong",sample_new['image_strong'].shape, sample_new['image_strong'].min(), sample_new['image_strong'].max(), sample_new['image_strong'].type())
-        # print("ours label_aug",sample_new['label_aug'].shape, sample_new['label_aug'].min(), sample_new['label_aug'].max(), sample_new['label_aug'].type())
-
 
         return sample_new
 

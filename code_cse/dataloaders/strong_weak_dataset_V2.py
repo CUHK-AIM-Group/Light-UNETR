@@ -52,16 +52,13 @@ class BaseDataSets(Dataset):
 
 def random_rot_flip(image_weak, image_strong, label):
     k = np.random.randint(0, 4)
-    # image = np.rot90(image, k)
     image_weak = np.rot90(image_weak, k)
     image_strong = np.rot90(image_strong, k)
     label = np.rot90(label, k)
     axis = np.random.randint(0, 2)
-    # image = np.flip(image, axis=axis).copy()
     image_weak = np.flip(image_weak, axis=axis).copy()
     image_strong = np.flip(image_strong, axis=axis).copy()
     label = np.flip(label, axis=axis).copy()
-    # return image, label
     return image_weak, image_strong, label
 
 
@@ -78,9 +75,6 @@ class RandomGenerator(object):
 
     def __call__(self, sample):
         image, label = sample['image'], sample['label']
-        # ind = random.randrange(0, img.shape[0])
-        # image = img[ind, ...]
-        # label = lab[ind, ...]
         if random.random() > 0.5:
             image, label = random_rot_flip(image, label)
         elif random.random() > 0.5:
@@ -191,31 +185,18 @@ class StrongWeakLAHeart(Dataset):
         return len(self.image_list)
 
     def __getitem__(self, idx):
-        # print(idx)
         image_name = self.image_list[idx]
         h5f = h5py.File(self._base_dir + "/2018LA_Seg_Training Set/" + image_name + "/mri_norm2.h5", 'r')
-        # h5f = h5py.File(self._base_dir+"/"+image_name+"/mri_norm2.h5", 'r')
         image = h5f['image'][:]
         label = h5f['label'][:]
-        # sample = {'image': image, 'label': label}
         image_weak = image.copy()
         image_strong = image.copy()
         sample_for_aug = {'image': image_strong, 'mask': label}
         sample_for_aug = self.aug(**sample_for_aug)
         sample = {'image_weak': image_weak, 'image_strong': sample_for_aug['image'], 'label': label}
-        
+
         if self.transform:
             sample = self.transform(sample)
-
-        # from torchvision.utils import save_image
-        # inspect_data(sample['image_weak'], 'image_weak')
-        # inspect_data(sample['image_strong'], 'image_strong')
-        
-        # for i in range(10):
-        #     assert sample['image_weak'].permute(3,0,1,2)[i].sum() != sample['image_strong'].permute(3,0,1,2)[i].sum()
-        #     save_image(sample['image_weak'].permute(3,0,1,2)[i], 'image_weak_{}.png'.format(i))
-        #     save_image(sample['image_strong'].permute(3,0,1,2)[i], 'image_strong_{}.png'.format(i))
-        # input()
 
         return sample
 
@@ -267,13 +248,10 @@ class StrongWeakPancreas(Dataset):
         return len(self.image_list)
 
     def __getitem__(self, idx):
-        # print(idx)
         image_name = self.image_list[idx]
         h5f = h5py.File(self._base_dir + '/data/' + image_name, 'r')
-        # h5f = h5py.File(self._base_dir+"/"+image_name+"/mri_norm2.h5", 'r')
         image = h5f['image'][:]
         label = h5f['label'][:]
-        # sample = {'image': image, 'label': label}
         image_weak = image.copy()
         image_strong = image.copy()
         sample_for_aug = {'image': image_strong, 'mask': label}
@@ -344,7 +322,6 @@ class RandomCrop(object):
         self.with_sdf = with_sdf
 
     def __call__(self, sample):
-        # image, label = sample['image'], sample['label']
         image_weak, image_strong, label = sample['image_weak'], sample['image_strong'], sample['label']
         if self.with_sdf:
             sdf = sample['sdf']
@@ -372,10 +349,8 @@ class RandomCrop(object):
         image_strong = image_strong[w1:w1 + self.output_size[0], h1:h1 + self.output_size[1], d1:d1 + self.output_size[2]]
         if self.with_sdf:
             sdf = sdf[w1:w1 + self.output_size[0], h1:h1 + self.output_size[1], d1:d1 + self.output_size[2]]
-            # return {'image': image, 'label': label, 'sdf': sdf}
             return {'image_weak': image_weak, 'image_strong': image_strong, 'label': label, 'sdf': sdf}
         else:
-            # return {'image': image, 'label': label}
             return {'image_weak': image_weak, 'image_strong': image_strong, 'label': label}
 
 
@@ -387,12 +362,8 @@ class RandomRotFlip(object):
     """
 
     def __call__(self, sample):
-        # image, label = sample['image'], sample['label']
         image_weak, image_strong, label = sample['image_weak'], sample['image_strong'], sample['label']
-        # image, label = random_rot_flip(image, label)
         image_weak, image_strong, label = random_rot_flip(image_weak, image_strong, label)
-
-        # return {'image': image, 'label': label}
         return {'image_weak': image_weak, 'image_strong': image_strong, 'label': label}
 
 class RandomRot(object):
@@ -438,19 +409,14 @@ class ToTensor(object):
     """Convert ndarrays in sample to Tensors."""
 
     def __call__(self, sample):
-        # image = sample['image']
         image_weak = sample['image_weak']
         image_strong = sample['image_strong']
-        # image = image.reshape(1, image.shape[0], image.shape[1], image.shape[2]).astype(np.float32)
         image_weak = image_weak.reshape(1, image_weak.shape[0], image_weak.shape[1], image_weak.shape[2]).astype(np.float32)
         image_strong = image_strong.reshape(1, image_strong.shape[0], image_strong.shape[1], image_strong.shape[2]).astype(np.float32)
         if 'onehot_label' in sample:
-            # return {'image': torch.from_numpy(image), 'label': torch.from_numpy(sample['label']).long(),
-                    # 'onehot_label': torch.from_numpy(sample['onehot_label']).long()}
             return {'image_weak': torch.from_numpy(image_weak), 'image_strong': torch.from_numpy(image_strong), 'label': torch.from_numpy(sample['label']).long(),
                     'onehot_label': torch.from_numpy(sample['onehot_label']).long()}
         else:
-            # return {'image': torch.from_numpy(image), 'label': torch.from_numpy(sample['label']).long()}
             return {'image_weak': torch.from_numpy(image_weak), 'image_strong': torch.from_numpy(image_strong), 'label': torch.from_numpy(sample['label']).long()}
         
 

@@ -2,7 +2,6 @@ import torch
 from torch.nn import functional as F
 import torch.nn as nn
 import contextlib
-import pdb
 import numpy as np
 
 
@@ -15,18 +14,9 @@ def softmax_mse_loss_three(input_logits, input_logits2, target_logits):
     - Sends gradients to inputs but not the targets.
     """
     assert input_logits.size() == target_logits.size()
-    # input_logits[input_logits>=0.5]=1
-    # input_logits[input_logits<0.5]=0
-    # input_logits2[input_logits2>=0.5]=1
-    # input_logits2[input_logits2<0.5]=0
-    # target_logits[target_logits>=0.5]=1
-    # target_logits[target_logits<0.5]=0
     input_softmax = input_logits
     input_softmax2 = input_logits2
-    target_softmax =target_logits
-    # input_softmax = F.softmax(input_logits, dim=1)
-    # input_softmax2 = F.softmax(input_logits2, dim=1)
-    # target_softmax = F.softmax(target_logits, dim=1)
+    target_softmax = target_logits
 
     mse_loss = (input_softmax-target_softmax)**2 + (input_softmax2-target_softmax)**2 + (input_softmax - input_softmax2)**2
 
@@ -86,8 +76,6 @@ class mask_DiceLoss(nn.Module):
 
     def forward(self, logits, target, mask=None):
 
-        # print("IN", logits.shape, target.shape, mask.shape if mask is not None else None)
-        # import ipdb; ipdb.set_trace()
         size = logits.size()
         N, nclass = size[0], size[1]
 
@@ -98,9 +86,7 @@ class mask_DiceLoss(nn.Module):
 
         # N x C x H x W
         pred_one_hot = pred
-        # print(target.shape, pred_one_hot.shape, nclass)
         target_one_hot = to_one_hot(target.type(torch.long), nclass).type(torch.float32)
-        # print(target_one_hot.shape, pred_one_hot.shape, nclass)
 
         # N x C x H x W
         inter = pred_one_hot * target_one_hot
@@ -281,7 +267,6 @@ def _disable_tracking_bn_stats(model):
     model.apply(switch_attr)
 
 def _l2_normalize(d):
-    # pdb.set_trace()
     d_reshaped = d.view(d.shape[0], -1, *(1 for _ in range(d.dim() - 2)))
     d /= torch.norm(d_reshaped, dim=1, keepdim=True) + 1e-8  ###2-p length of vector
     return d
@@ -400,72 +385,6 @@ def compute_unsupervised_loss_by_threshold(predict, target, logits, thresh=0.95)
     return loss.mean(), thresh_mask.float().mean()
 
 
-# def compute_unsupervised_loss_by_patch_wise_threshold(predict, target, logits, path_size=(4, 4, 4), ema=0.99, tau=None): # deprecated, slow
-#     batch_size, num_class, h, w, d = predict.shape
-#     # print(predict.shape, target.shape, logits.shape) # [bchwd], [bhwd], [bhwd]
-#     assert h % path_size[0] == 0, 'expect h % path_size[0] == 0, but got {} % {} != 0'.format(h, path_size[0])
-#     assert w % path_size[1] == 0, 'expect w % path_size[1] == 0, but got {} % {} != 0'.format(w, path_size[1])
-#     assert d % path_size[2] == 0, 'expect d % path_size[2] == 0, but got {} % {} != 0'.format(d, path_size[2])
-    
-#     # Initialize the threshold mask
-#     thresh_mask = torch.zeros((batch_size, h, w, d), dtype=torch.bool, device='cuda')
-#     if torch.sum(tau) == 0:
-#         tau = torch.ones((h // path_size[0], w // path_size[1], d // path_size[2]), dtype=torch.float32, device='cuda') * 0.65
-
-#     # Iterate over each patch
-#     # for class_idx in range(num_class):
-#     for b in range(batch_size):
-#         for i in range(h // path_size[0]):
-#             for j in range(w // path_size[1]):
-#                 for k in range(d // path_size[2]):
-#                     # Extract the patch from the segmentation prediction map
-#                     logits_patch = logits[b, i * path_size[0]: (i + 1) * path_size[0], j * path_size[1]: (j + 1) * path_size[1], k * path_size[2]: (k + 1) * path_size[2]]
-
-#                     # Calculate the threshold value \tau_ijk
-#                     tau[i, j, k] = ema * tau[i, j, k] + (1 - ema) * logits_patch.mean()
-#                     # print(tau[i, j, k], logits_patch.shape)
-#                     # Create a binary mask for the patch
-#                     thresh_mask_patch = logits_patch.ge(tau[i, j, k]).bool() * (target[b, i * path_size[0]: (i + 1) * path_size[0], j * path_size[1]: (j + 1) * path_size[1], k * path_size[2]: (k + 1) * path_size[2]] != 255).bool()
-
-#                     # Update the threshold mask
-#                     thresh_mask[b, i * path_size[0]: (i + 1) * path_size[0], j * path_size[1]: (j + 1) * path_size[1], k * path_size[2]: (k + 1) * path_size[2]] = thresh_mask_patch
-#         # if b == 1:
-#         #     print('tau', tau.squeeze())
-
-#     # thresh_mask = logits.ge(thresh).bool() * (target != 255).bool()
-#     target[~thresh_mask] = 255
-#     loss = F.cross_entropy(predict, target, ignore_index=255, reduction="none")
-#     return loss.mean(), thresh_mask.float().mean(), tau, thresh_mask
-
-# def compute_unsupervised_loss_by_patch_wise_threshold(predict, target, logits, iter_num, init_thresh, path_size=(4, 4, 4), ema=0.99, tau=None):
-#     batch_size, num_class, h, w, d = predict.shape
-#     assert h % path_size[0] == 0, 'expect h % path_size[0] == 0, but got {} % {} != 0'.format(h, path_size[0])
-#     assert w % path_size[1] == 0, 'expect w % path_size[1] == 0, but got {} % {} != 0'.format(w, path_size[1])
-#     assert d % path_size[2] == 0, 'expect d % path_size[2] == 0, but got {} % {} != 0'.format(d, path_size[2])
-    
-#     # Initialize the threshold mask
-#     thresh_mask = torch.zeros((batch_size, h, w, d), dtype=torch.bool, device='cuda')
-#     if iter_num == 0:
-#         print('Initialize tau')
-#         tau = torch.ones((1, h // path_size[0], 1, w // path_size[1], 1, d // path_size[2], 1), dtype=torch.float32, device='cuda') * init_thresh
-
-#     # Reshape the logits and target tensors to match the shape of the threshold mask
-#     logits = logits.view(batch_size, h // path_size[0], path_size[0], w // path_size[1], path_size[1], d // path_size[2], path_size[2])
-#     mean_logits = logits.mean(dim=(2, 4, 6), keepdim=True)
-#     reshaped_target = target.view(batch_size, h // path_size[0], path_size[0], w // path_size[1], path_size[1], d // path_size[2], path_size[2])
-
-#     # ema tau
-#     with torch.no_grad():
-#         for b in range(batch_size):
-#             new_tau  = ema * tau + (1 - ema) * mean_logits[b].unsqueeze(0)
-#             tau.copy_(new_tau)
-#             del new_tau
-#             thresh_mask[b] = ((logits[b] >= tau).bool() * (reshaped_target[b] != 255).bool()).view(1, h, w, d)
-
-#     target[~thresh_mask] = 255
-#     loss = F.cross_entropy(predict, target, ignore_index=255, reduction="none")
-#     return loss.mean(), thresh_mask.float().mean(), tau
-
 def compute_unsupervised_loss_by_patch_wise_threshold(predict, target, logits, iter_num, init_thresh, path_size=(4, 4, 4), ema=0.99, tau=None):
     batch_size, num_class, h, w, d = predict.shape
     assert h % path_size[0] == 0, 'expect h % path_size[0] == 0, but got {} % {} != 0'.format(h, path_size[0])
@@ -479,13 +398,10 @@ def compute_unsupervised_loss_by_patch_wise_threshold(predict, target, logits, i
         tau = torch.ones((batch_size, h // path_size[0], w // path_size[1], d // path_size[2]), dtype=torch.float32, device='cuda') * init_thresh
 
     # Reshape the logits and target tensors to match the shape of the threshold mask
-    # print(logits.shape)
-    # print(batch_size, h // path_size[0], path_size[0], w // path_size[1], path_size[1], d // path_size[2], path_size[2])
     logits = logits.view(batch_size, h // path_size[0], path_size[0], w // path_size[1], path_size[1], d // path_size[2], path_size[2])
     reshaped_target = target.view(batch_size, h // path_size[0], path_size[0], w // path_size[1], path_size[1], d // path_size[2], path_size[2])
 
     # Patch-wise thresholding
-    # print(h // path_size[0], w // path_size[1], d // path_size[2])
     with torch.no_grad():
         for b in range(batch_size):
             for i in range(h // path_size[0]):
@@ -497,13 +413,6 @@ def compute_unsupervised_loss_by_patch_wise_threshold(predict, target, logits, i
                         thresh_mask[b, i*path_size[0]:(i+1)*path_size[0], j*path_size[1]:(j+1)*path_size[1], k*path_size[2]:(k+1)*path_size[2]] = (patch_logits >= patch_tau).bool() * (patch_target != 255).bool()
 
     # Update tau
-    # with torch.no_grad():
-    #     for b in range(batch_size):
-    #         for i in range(h // path_size[0]):
-    #             for j in range(w // path_size[1]):
-    #                 for k in range(d // path_size[2]):
-    #                     patch_logits = logits[b, i, :, j, :, k, :]
-    #                     patch_tau = tau[b, i, j, k]
                         new_tau = ema * patch_tau + (1 - ema) * patch_logits.mean()
                         tau[b, i, j, k] = new_tau
 
